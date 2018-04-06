@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from rwisimulation.positionmatrix import position_matrix_per_object_shape, calc_position_matrix
 from rwisimulation.calcrxpower import calc_rx_power
 
-import save5gmdata as fgdb
+from rwisimulation.datamodel import save5gmdata as fgdb
 
 #import config as c
 class c:
