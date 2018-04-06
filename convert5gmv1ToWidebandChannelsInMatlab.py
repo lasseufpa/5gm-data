@@ -17,7 +17,7 @@ import datetime
 
 import numpy as np
 from shapely import geometry
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 import h5py
 
 from rwisimulation.positionmatrix import position_matrix_per_object_shape, calc_position_matrix
@@ -51,11 +51,11 @@ pythonExtension = '.npz'
 matlabExtension = '.hdf5'
 
 # assume 50 scenes per episode, 10 receivers per scene
-numScenesPerEpisode = 50
+numScenesPerEpisode = 10
 numTxRxPairsPerScene = 10
 numRaysPerTxRxPair = 25
 numVariablePerRay = 7
-plt.ion()
+#plt.ion()
 numEpisode = 0
 for ep in session.query(fgdb.Episode): #go over all episodes
 

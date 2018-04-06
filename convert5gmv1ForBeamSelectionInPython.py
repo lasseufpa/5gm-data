@@ -2,7 +2,7 @@ import datetime
 
 import numpy as np
 from shapely import geometry
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 
 from rwisimulation.positionmatrix import position_matrix_per_object_shape, calc_position_matrix
 from rwisimulation.calcrxpower import calc_rx_power
@@ -34,7 +34,7 @@ print(pm_per_object_shape)
 start = datetime.datetime.today()
 perc_done = None
 
-plt.ion()
+#plt.ion()
 for ep in session.query(fgdb.Episode):
     # 50 scenas, 10 receivers per scena
     position_matrix_array = np.zeros((50, 10, *pm_per_object_shape), np.int8)
