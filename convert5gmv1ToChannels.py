@@ -46,7 +46,7 @@ start = datetime.datetime.today()
 perc_done = None
 
 #if needed, manually create the output folder
-fileNamePrefix = './insitedata/urban_cannyon_v2i_5gmv1' #prefix of output files
+fileNamePrefix = './insitedata/urban_canyon_v2i_5gmv1_rays' #prefix of output files
 pythonExtension = '.npz'
 matlabExtension = '.hdf5'
 
