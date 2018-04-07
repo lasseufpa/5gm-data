@@ -1,5 +1,10 @@
+#Script to generate data for beam selection using only the position of vehicles. 
+#The output npz file has two arrays:
+#the first (position_matrix_array) is the input of machine learning algorithms and 
+#informs the vehicles positions;
+#the second (best_ray_array) is the output and can represent two alternatives,
+#depending on the variable use_geometricMIMOChannelModel.
 import datetime
-
 import numpy as np
 from shapely import geometry
 #from matplotlib import pyplot as plt
@@ -10,7 +15,7 @@ from rwisimulation.calcrxpower import calc_rx_power
 from rwisimulation.datamodel import save5gmdata as fgdb
 
 #import config as c
-class c:
+class c: #this information is obtained from the config.py file used to generate the data
     #analysis_area = (648, 348, 850, 685)
     analysis_area = (744, 429, 767, 679)
     analysis_area_resolution = 0.5
@@ -21,27 +26,31 @@ analysis_polygon = geometry.Polygon([(c.analysis_area[0], c.analysis_area[1]),
                                      (c.analysis_area[2], c.analysis_area[3]),
                                      (c.analysis_area[0], c.analysis_area[3])])
 only_los = True
-use_yuyang = False
+use_geometricMIMOChannelModel = False
 
-npz_name = 'episode.npz'
+npz_name = 'episode.npz' #output file name
 
 session = fgdb.Session()
 
 pm_per_object_shape = position_matrix_per_object_shape(c.analysis_area, c.analysis_area_resolution)
-print(pm_per_object_shape)
+#print(pm_per_object_shape)
 
 # do not look, just to report
 start = datetime.datetime.today()
 perc_done = None
 
-#plt.ion()
+totalNumEpisodes = session.query(fgdb.Episode).count()
+print('Found ', totalNumEpisodes, ' episodes. Processing...')
 for ep in session.query(fgdb.Episode):
-    # 50 scenas, 10 receivers per scena
+    # 50 scenes, 10 receivers per scene
+    print('Processing ', ep.number_of_scenes, ' scenes in episode ', ep.insite_pah,)
+    print('Start time = ', ep.simulation_time_begin, ' and sampling period = ', ep.sampling_time, ' seconds')
+    #Assumes 50 scenes per episode and 10 Tx/Rx pairs per scene
     position_matrix_array = np.zeros((50, 10, *pm_per_object_shape), np.int8)
-    if use_yuyang:
-        best_ray_array = np.zeros((50, 10, 2), np.float32)
+    if use_geometricMIMOChannelModel:
+        best_ray_array = np.zeros((50, 10, 2), np.float32) #2 numbers are the best Tx and Rx codebook indices
     else:
-        best_ray_array = np.zeros((50, 10, 4), np.float32)
+        best_ray_array = np.zeros((50, 10, 4), np.float32) #4 angles (azimuth and elevation) for Tx and Rx
     best_ray_array.fill(np.nan)
     rec_name_to_array_idx_map = [obj.name for obj in ep.scenes[0].objects if len(obj.receivers) > 0]
     print(rec_name_to_array_idx_map)
@@ -65,7 +74,7 @@ for ep in session.query(fgdb.Episode):
                                 best_path_gain = ray.path_gain
                                 best_ray = ray
                         if (best_ray is not None and not best_ray.is_los) or not only_los:
-                            if use_yuyang:
+                            if use_geometricMIMOChannelModel:
                                 departure_angle_array = np.empty((len(rec.rays), 2), np.float64)
                                 arrival_angle_array = np.empty((len(rec.rays), 2), np.float64)
                                 p_gain_array = np.empty((len(rec.rays)), np.float64)
@@ -110,7 +119,7 @@ for ep in session.query(fgdb.Episode):
             rec_array_idx = rec_name_to_array_idx_map.index(rec_name)
             position_matrix_array[sc_i, rec_array_idx, :] = scene_position_matrix[rec_i]
 
-        # do not look, just to reporting spent time
+        # just reporting spent time
         perc_done = ((sc_i + 1) / ep.number_of_scenes) * 100
         elapsed_time = datetime.datetime.today() - start
         time_p_perc = elapsed_time / perc_done
@@ -121,6 +130,7 @@ for ep in session.query(fgdb.Episode):
             time_p_perc * (100 - perc_done)), end='')
     print()
 
-    np.savez(npz_name, position_matrix_array=position_matrix_array,
+#save output file with two arrays
+np.savez(npz_name, position_matrix_array=position_matrix_array,
              best_ray_array=best_ray_array)
-    break
+print('Saved file ', npz_name)
