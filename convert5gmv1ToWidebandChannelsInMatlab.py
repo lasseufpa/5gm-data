@@ -1,4 +1,3 @@
-import datetime
 #Will parse all database and create numpy arrays that represent all channels in the database.
 #Specificities: some episodes do not have all scenes. And some scenes do not have all receivers.
 #Assuming Ne episodes, with Ns scenes each, and Nr receivers (given there was only one transmitter),
@@ -13,8 +12,8 @@ import datetime
         # arrival_elevation
         # arrival_azimuth
         # isLOS
-#to simplify I will assume that all episodes have 50 scenes and 10 receivers in each
-
+#to simplify I will assume that all episodes have 50 scenes and 10 receivers.
+import datetime
 import numpy as np
 from shapely import geometry
 #from matplotlib import pyplot as plt
@@ -39,26 +38,28 @@ analysis_polygon = geometry.Polygon([(c.analysis_area[0], c.analysis_area[1]),
 session = fgdb.Session()
 totalNumEpisodes = session.query(fgdb.Episode).count()
 
-pm_per_object_shape = position_matrix_per_object_shape(c.analysis_area, c.analysis_area_resolution)
-print(pm_per_object_shape)
+#pm_per_object_shape = position_matrix_per_object_shape(c.analysis_area, c.analysis_area_resolution)
+#print(pm_per_object_shape)
 
-# do not look, just to report
+# just to report time
 start = datetime.datetime.today()
 perc_done = None
 
+#if needed, manually create the output folder
 fileNamePrefix = './insitedata/urban_cannyon_v2i_5gmv1' #prefix of output files
 pythonExtension = '.npz'
 matlabExtension = '.hdf5'
 
 # assume 50 scenes per episode, 10 receivers per scene
-numScenesPerEpisode = 10
+numScenesPerEpisode = 50
 numTxRxPairsPerScene = 10
 numRaysPerTxRxPair = 25
 numVariablePerRay = 7
 #plt.ion()
 numEpisode = 0
 for ep in session.query(fgdb.Episode): #go over all episodes
-
+    print('Processing ', ep.number_of_scenes, ' scenes in episode ', ep.insite_pah,)
+    print('Start time = ', ep.simulation_time_begin, ' and sampling period = ', ep.sampling_time, ' seconds')
     print('Episode: ' + str(numEpisode+1) + ' out of ' + str(totalNumEpisodes))
 
     #initialization
@@ -106,7 +107,7 @@ for ep in session.query(fgdb.Episode): #go over all episodes
                             #if ray.is_los:
                             #    print(thisRayInfo)
 
-        # do not look, just to reporting spent time
+        # just for reporting spent time
         perc_done = ((sc_i + 1) / ep.number_of_scenes) * 100
         elapsed_time = datetime.datetime.today() - start
         time_p_perc = elapsed_time / perc_done
