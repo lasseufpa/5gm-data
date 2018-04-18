@@ -1,9 +1,7 @@
 #Script to generate data for beam selection using only the position of vehicles. 
-#The output npz file has two arrays:
-#the first (position_matrix_array) is the input of machine learning algorithms and 
-#informs the vehicles positions;
-#the second (best_ray_array) is the output and can represent two alternatives,
-#depending on the variable use_geometricMIMOChannelModel.
+#The output npz and hdf5 file have the position_matrix_array to be the input of machine
+# learning algorithms and informs the vehicles positions
+
 import datetime
 import numpy as np
 from shapely import geometry
@@ -13,23 +11,28 @@ from rwisimulation.positionmatrix import position_matrix_per_object_shape, calc_
 from rwisimulation.calcrxpower import calc_rx_power
 
 from rwisimulation.datamodel import save5gmdata as fgdb
+import h5py
 
 #import config as c
 class c: #this information is obtained from the config.py file used to generate the data
     #analysis_area = (648, 348, 850, 685)
     analysis_area = (744, 429, 767, 679) #coordinates that define the areas the mobile objects should be
-    analysis_area_resolution = 0.5 #grid resolution in meters
-    antenna_number = 4 #number of antenna elements in Rx array
-    frequency = 6e10 #carrier frequency in Hz
+    analysis_area_resolution = 0.5 #grid resolution in meters (not used here)
+    #antenna_number = 4 #number of antenna elements in Rx array (not used here)
+    #frequency = 6e10 #carrier frequency in Hz (not used here)
 
 analysis_polygon = geometry.Polygon([(c.analysis_area[0], c.analysis_area[1]),
                                      (c.analysis_area[2], c.analysis_area[1]),
                                      (c.analysis_area[2], c.analysis_area[3]),
                                      (c.analysis_area[0], c.analysis_area[3])])
-only_los = True
-use_geometricMIMOChannelModel = False
 
-npz_name = 'episode.npz' #output file name
+#if needed, manually create the output folder
+fileNamePrefix = './positionMatrices/urban_canyon_v2i_5gmv1_matrices' #prefix of output files
+pythonExtension = '.npz'
+matlabExtension = '.hdf5'
+
+# assume 50 scenes per episode
+numScenesPerEpisode = 50
 
 session = fgdb.Session()
 
@@ -42,17 +45,13 @@ perc_done = None
 
 totalNumEpisodes = session.query(fgdb.Episode).count()
 print('Found ', totalNumEpisodes, ' episodes. Processing...')
+numEpisode = 0
 for ep in session.query(fgdb.Episode):
     # 50 scenes, 10 receivers per scene
     print('Processing ', ep.number_of_scenes, ' scenes in episode ', ep.insite_pah,)
     print('Start time = ', ep.simulation_time_begin, ' and sampling period = ', ep.sampling_time, ' seconds')
     #Assumes 50 scenes per episode and 10 Tx/Rx pairs per scene
     position_matrix_array = np.zeros((50, 10, *pm_per_object_shape), np.int8)
-    if use_geometricMIMOChannelModel:
-        best_ray_array = np.zeros((50, 10, 2), np.float32) #2 numbers are the best Tx and Rx codebook indices
-    else:
-        best_ray_array = np.zeros((50, 10, 4), np.float32) #4 angles (azimuth and elevation) for Tx and Rx
-    best_ray_array.fill(np.nan)
     rec_name_to_array_idx_map = [obj.name for obj in ep.scenes[0].objects if len(obj.receivers) > 0]
     print(rec_name_to_array_idx_map)
     for sc_i, sc in enumerate(ep.scenes):
@@ -74,35 +73,7 @@ for ep in session.query(fgdb.Episode):
                             if ray.path_gain > best_path_gain:
                                 best_path_gain = ray.path_gain
                                 best_ray = ray
-                        if (best_ray is not None and not best_ray.is_los) or not only_los:
-                            if use_geometricMIMOChannelModel:
-                                departure_angle_array = np.empty((len(rec.rays), 2), np.float64)
-                                arrival_angle_array = np.empty((len(rec.rays), 2), np.float64)
-                                p_gain_array = np.empty((len(rec.rays)), np.float64)
-                                for ray_i, ray in enumerate(rec.rays):
-                                    departure_angle_array[ray_i, :] = np.array((
-                                        ray.departure_elevation,
-                                        ray.departure_azimuth,
-                                    ))
-                                    arrival_angle_array[ray_i, :] = np.array((
-                                        ray.arrival_elevation,
-                                        ray.arrival_azimuth,
-                                    ))
-                                    p_gain_array[ray_i] = np.array((ray.path_gain))
-                                #from IPython import embed
-                                #embed()
-                                t1 = calc_rx_power(departure_angle_array, arrival_angle_array, p_gain_array,
-                                                   c.antenna_number, c.frequency)
-                                t1_abs = np.abs(t1)
-                                best_ray_array[sc_i, rec_array_idx, :] = \
-                                    np.argwhere(t1_abs == np.max(t1_abs))
-                            else:
-                                best_ray_array[sc_i, rec_array_idx, :] = np.array((
-                                    best_ray.departure_elevation,
-                                    best_ray.departure_azimuth,
-                                    best_ray.arrival_elevation,
-                                    best_ray.arrival_azimuth))
-                    if (best_ray is not None and not best_ray.is_los) or not only_los:
+                    if (best_ray is not None):
                         # the next polygon added will be the receiver
                         polygons_of_interest_idx_list.append(len(polygon_list))
                         rec_present.append(obj.name)
@@ -130,8 +101,14 @@ for ep in session.query(fgdb.Episode):
             elapsed_time / (sc_i + 1),
             time_p_perc * (100 - perc_done)), end='')
     print()
+    outputFileName = fileNamePrefix + 'positions_e' + str(numEpisode+1) + pythonExtension
+    np.savez(outputFileName, position_matrix_array=position_matrix_array)
+    print('==> Wrote file ' + outputFileName)
 
-#save output file with two arrays
-np.savez(npz_name, position_matrix_array=position_matrix_array,
-             best_ray_array=best_ray_array)
-print('Saved file ', npz_name)
+    outputFileName = fileNamePrefix + 'positions_e' + str(numEpisode+1) + matlabExtension
+    print('==> Wrote file ' + outputFileName)
+    f = h5py.File(outputFileName, 'w')
+    f['position_matrix_array'] = position_matrix_array
+    f.close()
+
+    numEpisode += 1
