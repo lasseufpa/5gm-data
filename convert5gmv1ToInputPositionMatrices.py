@@ -2,6 +2,8 @@
 #The output npz and hdf5 file have the position_matrix_array to be the input of machine
 # learning algorithms and informs the vehicles positions
 
+#TO DO use sparse representation
+
 import datetime
 import numpy as np
 from shapely import geometry
@@ -37,7 +39,7 @@ numScenesPerEpisode = 50
 session = fgdb.Session()
 
 pm_per_object_shape = position_matrix_per_object_shape(c.analysis_area, c.analysis_area_resolution)
-#print(pm_per_object_shape)
+print('Will write output matrices of dimension: ', pm_per_object_shape)
 
 # do not look, just to report
 start = datetime.datetime.today()
@@ -90,6 +92,7 @@ for ep in session.query(fgdb.Episode):
         for rec_i, rec_name in enumerate(rec_present):
             rec_array_idx = rec_name_to_array_idx_map.index(rec_name)
             position_matrix_array[sc_i, rec_array_idx, :] = scene_position_matrix[rec_i]
+            #print(position_matrix_array.shape)
 
         # just reporting spent time
         perc_done = ((sc_i + 1) / ep.number_of_scenes) * 100
