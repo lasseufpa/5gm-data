@@ -23,6 +23,7 @@ from rwisimulation.positionmatrix import position_matrix_per_object_shape, calc_
 from rwisimulation.calcrxpower import calc_rx_power
 
 from rwisimulation.datamodel import save5gmdata as fgdb
+from fivegmdatasets import urban_cannyon_v2i
 
 #import config as c
 class c:
@@ -35,7 +36,7 @@ analysis_polygon = geometry.Polygon([(c.analysis_area[0], c.analysis_area[1]),
                                      (c.analysis_area[2], c.analysis_area[1]),
                                      (c.analysis_area[2], c.analysis_area[3]),
                                      (c.analysis_area[0], c.analysis_area[3])])
-session = fgdb.Session()
+session = urban_cannyon_v2i()
 totalNumEpisodes = session.query(fgdb.Episode).count()
 
 #pm_per_object_shape = position_matrix_per_object_shape(c.analysis_area, c.analysis_area_resolution)
