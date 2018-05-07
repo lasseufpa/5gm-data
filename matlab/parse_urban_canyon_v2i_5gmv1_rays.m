@@ -5,7 +5,7 @@ rng(1)
 shouldShowDebugPlots = 0; %use 1 to show plots
 
 %compose as fileName = [insitePath filePrefix num2str(episode) extension]
-insitePath='D:\github\5gm-data\insitedata\';
+insitePath='D:\github\5gm-data\insitedata_canyon\';
 filePrefix='urban_canyon_v2i_5gmv1_rays_e';
 extension='.hdf5';
 
@@ -66,14 +66,16 @@ for e=1:numEpisodes
             AoD_az = AoD_az(sortedIndices);
             gainMagnitude = gainMagnitude(sortedIndices);
             
+            %want to find the percentage of energy/power in N first taps of
+            %impulse response
             powerAccumulative=cumsum(gainMagnitude.^2);
             totalPower=powerAccumulative(end);
             thIndex = find(powerAccumulative >= ...
                 powerThreshold*totalPower,1,'first');
             
-            channelLength = timeOfArrival(end);
+            channelLength = timeOfArrival(end); %in seconds
             disp(['total channelLength = ' num2str(channelLength )])
-            thresholdedChannelLength = timeOfArrival(thIndex);
+            thresholdedChannelLength = timeOfArrival(thIndex); %up to x% of energy
             disp(['thresholded channelLengthInTaps = ' ...
                 num2str(thresholdedChannelLength)])
             if channelLength > maxChannelLength
@@ -99,5 +101,9 @@ for e=1:numEpisodes
 end
 disp('######## Final statistics: ###########')
 disp(['maxChannelLength = ' num2str(maxChannelLength) ...
-    ' for power threshold = ' num2str(100*powerThreshold) '%'])
+    ' seconds for power threshold = ' num2str(100*powerThreshold) '%'])
+Fs=1e9; %sampling frequency
+Ts=1/Fs; %sampling interval
+disp(['maxChannelLength = ' num2str(round(maxChannelLength/Ts)) ...
+    ' taps for power threshold above and sampling frequency = ' num2str(Fs/1e6) ' MHz'])
 disp(['numOfValidChannels = ' num2str(numOfValidChannels)])
