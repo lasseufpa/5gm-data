@@ -9,7 +9,7 @@ If you use any data or code, please cite: "5G MIMO Data for Machine Learning: Ap
 ```
 Bibtex entry:
 @inproceedings{Klautau18,
-  author    = {Aldebaro Klautau and Pedro Batista and Nuria Gonzalez-Prelcic and Yuyang Wang and Robert W. Heath Jr.},
+  author    = {Aldebaro Klautau and Pedro Batista and Nuria Gonzalez-Prelcic and Yuyang Wang and Robert W. {Heath Jr.}},
   title     = {{5G} {MIMO} Data for Machine Learning: Application to Beam-Selection using Deep Learning},
   booktitle = {2018 Information Theory and Applications Workshop, San Diego},
   pages     = {1--1},
