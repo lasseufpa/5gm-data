@@ -8,6 +8,7 @@
 
 import datetime
 import numpy as np
+import os
 from shapely import geometry
 from PIL import Image  #used pip install pillow
 #from matplotlib import pyplot as plt
@@ -31,8 +32,11 @@ analysis_polygon = geometry.Polygon([(c.analysis_area[0], c.analysis_area[1]),
                                      (c.analysis_area[2], c.analysis_area[3]),
                                      (c.analysis_area[0], c.analysis_area[3])])
 
-#if needed, manually create the output folder
-fileNamePrefix = './positionMatrices/urban_canyon_v2i_5gmv1_positionMatrix' #prefix of output files
+#if needed, create the output folder
+outputFolder = './positionMatrices'
+if not os.path.exists(outputFolder):
+    os.makedirs(outputFolder)
+fileNamePrefix = os.path.join(outputFolder,'urban_canyon_v2i_5gmv1_positionMatrix') #prefix of output files
 pythonExtension = '.npz'
 matlabExtension = '.hdf5'
 
