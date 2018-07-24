@@ -16,7 +16,7 @@ from shapely import geometry
 import h5py
 
 from rwisimulation.positionmatrix import position_matrix_per_object_shape, calc_position_matrix
-from rwisimulation.calcrxpower import calc_rx_power
+#from rwisimulation.calcrxpower import calc_rx_power
 
 from rwisimulation.datamodel import save5gmdata as fgdb
 
@@ -39,12 +39,14 @@ numEpisode = 0
 for ep in session.query(fgdb.Episode): #go over all episodes
     print('Processing ', ep.number_of_scenes, ' scenes in episode ', ep.insite_pah,)
     print('The mentioned file corresponds to the first scene. To find the others, increment the counter.')
-    print('For example /run00005/wri-simulation.info is the first scene, hence the second correspons to '
-          ' /run00006/wri-simulation.info and so on')
+    print('For example some_path/run00005/ is the first scene, hence the second correspons to '
+          ' some_path/run00006/ and so on')
     print('Start time = ', ep.simulation_time_begin, ' and sampling period = ', ep.sampling_time, ' seconds')
     print('Episode: ' + str(numEpisode+1) + ' out of ' + str(totalNumEpisodes))
 
     #from the first scene, get all receiver names
+    #this list is important because it allows to converts vehicle names to their indices. From a given episode,
+    #a given vehicle name will always have the same index in this list
     rec_name_to_array_idx_map = [obj.name for obj in ep.scenes[0].objects if len(obj.receivers) > 0]
     print('The names of the mobile objects that have at a receiver in this episode are:')
     #See documentation at https://github.com/lasseufpa/5gm-rwi-simulation/wiki

@@ -20,7 +20,7 @@ from shapely import geometry
 import h5py
 
 from rwisimulation.positionmatrix import position_matrix_per_object_shape, calc_position_matrix
-from rwisimulation.calcrxpower import calc_rx_power
+#from rwisimulation.calcrxpower import calc_rx_power
 
 from rwisimulation.datamodel import save5gmdata as fgdb
 
