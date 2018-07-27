@@ -14,17 +14,20 @@ def main():
     normalizedAntDistance = 0.5
     angleWithArrayNormal = 0  # use 0 when the angles are provided by InSite
     numberEpisodes = 119  # total number of episodes
-    outputFolder = './outputnn/'
+    #outputFolder = './outputnn/'
+    outputFolder = 'D:/github/5gm-data/outputnn/'
     if not os.path.exists(outputFolder):
         os.makedirs(outputFolder)
     if os.name == 'nt':
         #116 episodes
         #inputPath = 'D:/github/5gm-data/insitedata/urban_canyon_v2i_5gmv1_rays_e'
         #119 episodes
-        inputPath = 'D:/ak/Works/2018-proj-beam-sense-ml-lidar/lidar_and_insite/e119/insitedata/urban_canyon_v2i_5gmv1_positionMatrix_e'
+        #inputPath = 'D:/ak/Works/2018-proj-beam-sense-ml-lidar/lidar_and_insite/e119/insitedata/urban_canyon_v2i_5gmv1_positionMatrix_e'
+        inputPath = 'D:/github/5gm-data/insitedata/urban_canyon_v2i_5gmv1_rays_e'
     else:
         #inputPath = '/mnt/d/github/5gm-data/insitedata/urban_canyon_v2i_5gmv1_rays_e'
-        inputPath = '/mnt/d/ak/Works/2018-proj-beam-sense-ml-lidar/lidar_and_insite/e119/insitedata/urban_canyon_v2i_5gmv1_positionMatrix_e'
+        #inputPath = '/mnt/d/ak/Works/2018-proj-beam-sense-ml-lidar/lidar_and_insite/e119/insitedata/urban_canyon_v2i_5gmv1_positionMatrix_e'
+        inputPath = '/mnt/d/github/5gm-data/insitedata/urban_canyon_v2i_5gmv1_rays_e'
 
     # initialize variables
     numOfValidChannels = 0
