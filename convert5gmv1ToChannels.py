@@ -82,6 +82,8 @@ for ep in session.query(fgdb.Episode): #go over all episodes
         rec_present = []
 
         for obj in sc.objects:
+            if len(obj.receivers) == 0:
+                continue  #do not process objects that are not receivers
             obj_polygon = geometry.asMultiPoint(obj.vertice_array[:,(0,1)]).convex_hull
             # check if object is inside the analysis_area
             if obj_polygon.within(analysis_polygon):
