@@ -91,7 +91,7 @@ for ep in session.query(fgdb.Episode): #go over all episodes
                 if len(obj.receivers) > 0:
                     rec_array_idx = rec_name_to_array_idx_map.index(obj.name)
                     for rec in obj.receivers: #for all receivers
-                        ray_i = 0;
+                        ray_i = 0
                         for ray in rec.rays: #for all rays
                             #gather all info
                             thisRayInfo = np.zeros(7)

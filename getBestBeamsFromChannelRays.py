@@ -1,12 +1,11 @@
 '''
-Read channel information (rays organized as npz files) and output
-indices of best pair of beams.
+Read channel information (rays organized as npz files) and output the complex-valued
+equivalent channels (not anymore only the indices of best pair of beams, which can
+be calculated with the generated data).
 '''
 import numpy as np
 import os
-# import rwisimulation as rwi #.calcrxpower import getNarrowBandULAMIMOChannel
 from rwisimulation.calcrxpower import getNarrowBandULAMIMOChannel
-
 
 def main():
     number_Rx_antennas = 8
@@ -36,6 +35,7 @@ def main():
     numNLOS = 0
     numOccurrencesTxIndices = np.zeros((number_Tx_antennas,), dtype=np.int)
     numOccurrencesRxIndices = np.zeros((number_Rx_antennas,), dtype=np.int)
+    numOccurrencesBeamPairIndices = np.zeros((np.maximum(number_Tx_antennas,number_Rx_antennas)**2,), dtype=np.int)
     for e in range(numberEpisodes):
         print("Episode # ", (e + 1))
         # if using owncloud files
@@ -46,7 +46,7 @@ def main():
         numScenes = allEpisodeData.shape[0]
         numReceivers = allEpisodeData.shape[1]
         #store two integers converted to 1
-        episodeOutputs = np.nan * np.ones((numScenes, numReceivers),
+        episodeOutputs = np.nan * np.ones((numScenes, numReceivers, number_Rx_antennas, number_Tx_antennas),
                                     np.float32)
         for s in range(numScenes):  # 50
             for r in range(numReceivers):  # 10
@@ -102,10 +102,12 @@ def main():
                 equivalentChannel = getNarrowBandULAMIMOChannel(AoD_az, AoA_az, gain_in_dB, number_Tx_antennas,
                                                                 number_Rx_antennas, normalizedAntDistance,
                                                                 angleWithArrayNormal)
-                equivalentChannel = np.abs(equivalentChannel)
+                equivalentChannelMagnitude = np.abs(equivalentChannel)
                 # print(equivalentChannel)
-                (bestRxIndex, bestTxIndex) = np.unravel_index(np.argmax(equivalentChannel, axis=None),
-                                                              equivalentChannel.shape)
+                bestBeamPairIndex = np.argmax(equivalentChannelMagnitude, axis=None)
+                numOccurrencesBeamPairIndices[bestBeamPairIndex] += 1
+                (bestRxIndex, bestTxIndex) = np.unravel_index(bestBeamPairIndex,
+                                                              equivalentChannelMagnitude.shape)
                 numOccurrencesTxIndices[bestTxIndex] += 1  # increment counters
                 numOccurrencesRxIndices[bestRxIndex] += 1
                 # if bestRxIndex + bestTxIndex != 0:
@@ -115,7 +117,7 @@ def main():
                 # when one needs to recover the labels:
                 #recoverLabelTx = np.floor(outputLabel/number_Rx_antennas)
                 #recoverLabelRx = outputLabel - recoverLabelTx*number_Rx_antennas
-                episodeOutputs[s,r]=outputLabel
+                episodeOutputs[s,r]=equivalentChannel
 
             #finished processing this episode
         npz_name = outputFolder + 'output_e_' +str(e+1)+'.npz'
@@ -135,6 +137,11 @@ def main():
     print(numOccurrencesTxIndices)
     print('Rx indices histogram:')
     print(numOccurrencesRxIndices)
+    print('Maximum among beam pair indices histogram:')
+    print(np.amax(numOccurrencesBeamPairIndices))
+    print('Beam pair indices histogram:')
+    for i in range(len(numOccurrencesBeamPairIndices)):
+        print(numOccurrencesBeamPairIndices[i], ' ')
 
 
 if __name__ == '__main__':
