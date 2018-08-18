@@ -31,28 +31,23 @@ totalNumEpisodes = session.query(fgdb.Episode).count()
 
 numEpisode = 0
 numValidChannels = 0
+numInvalidChannels = 0
+numLOS = 0
+numNLOS = 0
 for ep in session.query(fgdb.Episode):  # go over all episodes
-    if False:
-        print('Processing ', ep.number_of_scenes, ' scenes in episode ', ep.insite_pah, )
-        print('The mentioned file corresponds to the first scene. To find the others, increment the counter.')
-        print('For example some_path/run00005/ is the first scene, hence the second correspons to '
-              ' some_path/run00006/ and so on')
-        print('Start time = ', ep.simulation_time_begin, ' and sampling period = ', ep.sampling_time, ' seconds')
-        print('Episode: ' + str(numEpisode + 1) + ' out of ' + str(totalNumEpisodes))
-
-    # from the first scene, get all receiver names
-    # this list is important because it allows to converts vehicle names to their indices. From a given episode,
-    # a given vehicle name will always have the same index in this list
-    rec_name_to_array_idx_map = [obj.name for obj in ep.scenes[0].objects if len(obj.receivers) > 0]
-    if False:
-        print('The names of the mobile objects that have at a receiver in this episode are:')
-        # See documentation at https://github.com/lasseufpa/5gm-rwi-simulation/wiki
-        print(rec_name_to_array_idx_map)
-    maxNumOfReceiversInThisEpisode = len(rec_name_to_array_idx_map)
-
     # process each scene in this episode
     # count # of ep.scenes
     for sc_i, sc in enumerate(ep.scenes):
+        # from the first scene, get all receiver names
+        # this list is important because it allows to converts vehicle names to their indices. From a given episode,
+        # a given vehicle name will always have the same index in this list
+        rec_name_to_array_idx_map = [obj.name for obj in ep.scenes[0].objects if len(obj.receivers) > 0]
+        if False:
+            print('The names of the mobile objects that have at a receiver in this episode are:')
+            # See documentation at https://github.com/lasseufpa/5gm-rwi-simulation/wiki
+            print(rec_name_to_array_idx_map)
+        maxNumOfReceiversInThisEpisode = len(rec_name_to_array_idx_map)
+
         # print('Processing scene # ', sc_i, ' with ID ', sc.id, ' from episode ', sc.episode_id,
         #      ' with ', sc.number_of_receivers, ' receivers and ', sc.number_of_mobile_objects, ' mobile objects')
         polygon_list = []
@@ -60,9 +55,10 @@ for ep in session.query(fgdb.Episode):  # go over all episodes
         polygons_of_interest_idx_list = []
         rec_present = []
 
+        # get data for all in this scene
+        losReceiversInThisScene = np.zeros(maxNumOfReceiversInThisEpisode, dtype=np.bool)
         validReceiversInThisScene = np.zeros(maxNumOfReceiversInThisEpisode, dtype=np.bool)
-        approximateReceiverPositions = np.zeros((maxNumOfReceiversInThisEpisode,3))
-
+        approximateReceiverPositions = np.zeros((maxNumOfReceiversInThisEpisode, 3))
         # sc.objects has sc.number_of_mobile_objects, which can be a large number (e.g. 53)
         for obj in sc.objects:  # get object in scene
             if len(obj.receivers) == 0:
@@ -71,39 +67,56 @@ for ep in session.query(fgdb.Episode):  # go over all episodes
             # only check if within area in case it's a receiver to avoid wasting time
             obj_polygon = geometry.asMultiPoint(obj.vertice_array[:, (0, 1)]).convex_hull
             # check if object is inside the analysis_area
+            rec_array_idx = rec_name_to_array_idx_map.index(obj.name)
+            approximateReceiverPositions[rec_array_idx] = obj.position
             if obj_polygon.within(analysis_polygon):
                 # print(obj.name, ' with ID ', obj.id, ' is within analysis area and has a receiver')
-                rec_array_idx = rec_name_to_array_idx_map.index(obj.name)
                 validReceiversInThisScene[rec_array_idx] = True
-                approximateReceiverPositions[rec_array_idx] = obj.position
                 numValidChannels += 1
             else:
+                numInvalidChannels += 1
                 # print(obj.name, ' with ID ', obj.id, ' is not in analysis area')
                 continue
                 # if the object is a receiver and is within the analysis area
                 # in the 5gmv1 data this number is 0 or 1 (there is no more than 1 Rx per object)
                 # print(obj.name, ' has ', len(obj.receivers), ' receiver(s)')
                 # use the infamouse list to get the index corresponding to the mobile object with name obj.name
-            if False:
-                print(obj.name, ' is mapped to index ', rec_array_idx)
-                for rec in obj.receivers:  # for all potential receivers
-                    for ray in rec.rays:  # for all rays
-                        # gather all info
-                        thisRayInfo = np.zeros(7)
-                        thisRayInfo[0] = ray.path_gain
-                        thisRayInfo[1] = ray.time_of_arrival
-                        thisRayInfo[2] = ray.departure_elevation
-                        thisRayInfo[3] = ray.departure_azimuth
-                        thisRayInfo[4] = ray.arrival_elevation
-                        thisRayInfo[5] = ray.arrival_azimuth
-                        thisRayInfo[6] = ray.is_los
-                    print('Last ray of this receiver has values: ', thisRayInfo)
-        #print('Scene ', sc_i, ', valids: ', validReceiversInThisScene)
+            # print(obj.name, ' is mapped to index ', rec_array_idx)
+            if len(obj.receivers) > 1:
+                print('Was expecting only 1 receiver per vehicle')
+                exit(-1)
+            for rec in obj.receivers:  # for all potential receivers
+                for ray in rec.rays:  # for all rays
+                    if ray.is_los == 1:
+                        losReceiversInThisScene[rec_array_idx] = 1
+                # print('Scene ', sc_i, ', valids: ', validReceiversInThisScene)
+                if losReceiversInThisScene[rec_array_idx] == 1:
+                    numLOS += 1
+                else:
+                    numNLOS += 1
+        # now have the info for all receivers. Print in order
         for i in range(maxNumOfReceiversInThisEpisode):
-            thisString = str(numEpisode+1)+','+str(sc_i+1)+','+str(i+1)+','+rec_name_to_array_idx_map[i] +','+str(approximateReceiverPositions[i,0])+','+str(approximateReceiverPositions[i,1])
-            if validReceiversInThisScene[i]:
-                print('V,' + thisString)
+            #make indices start from 1
+            #thisString = str(numEpisode + 1) + ',' + str(sc_i + 1) + ',' + str(i + 1) + ',' + rec_name_to_array_idx_map[
+            #make indices start from 0
+            thisString = str(numEpisode) + ',' + str(sc_i) + ',' + str(i) + ',' + rec_name_to_array_idx_map[
+                i] + ',' + str(approximateReceiverPositions[i, 0]) + ',' + str(
+                approximateReceiverPositions[i, 1])
+            if validReceiversInThisScene[i]:  # pre-append
+                thisString = 'V,' + thisString
+                if losReceiversInThisScene[i]:  # post-append
+                    thisString = thisString + ',LOS=1'
+                else:
+                    thisString = thisString + ',LOS=0'
             else:
-                print('I,' + thisString)
+                thisString = 'I,' + thisString
+                thisString = thisString + ',none'
+            print(thisString)
     numEpisode += 1  # increment episode counter
 print('numValidChannels = ', numValidChannels)
+print('numInvalidChannels = ', numInvalidChannels)
+print('Sum = ', numInvalidChannels + numValidChannels)
+
+print('numLOS = ', numLOS)
+print('numNLOS = ', numNLOS)
+print('Sum = ', numNLOS + numLOS)

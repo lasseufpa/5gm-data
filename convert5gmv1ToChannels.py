@@ -51,12 +51,14 @@ pythonExtension = '.npz'
 matlabExtension = '.hdf5'
 
 # assume 50 scenes per episode, 10 receivers per scene
-numScenesPerEpisode = 50
+numScenesPerEpisode = 1 #50
 numTxRxPairsPerScene = 10
 numRaysPerTxRxPair = 25
-numVariablePerRay = 7
+numVariablePerRay = 7+1 #has the ray angle now
 #plt.ion()
 numEpisode = 0
+numLOS = 0
+numNLOS = 0
 for ep in session.query(fgdb.Episode): #go over all episodes
     print('Processing ', ep.number_of_scenes, ' scenes in episode ', ep.insite_pah,)
     print('Start time = ', ep.simulation_time_begin, ' and sampling period = ', ep.sampling_time, ' seconds')
@@ -92,9 +94,10 @@ for ep in session.query(fgdb.Episode): #go over all episodes
                     rec_array_idx = rec_name_to_array_idx_map.index(obj.name)
                     for rec in obj.receivers: #for all receivers
                         ray_i = 0
+                        isLOSChannel = 0
                         for ray in rec.rays: #for all rays
                             #gather all info
-                            thisRayInfo = np.zeros(7)
+                            thisRayInfo = np.zeros(8)
                             thisRayInfo[0] = ray.path_gain
                             thisRayInfo[1] = ray.time_of_arrival
                             thisRayInfo[2] = ray.departure_elevation
@@ -102,14 +105,18 @@ for ep in session.query(fgdb.Episode): #go over all episodes
                             thisRayInfo[4] = ray.arrival_elevation
                             thisRayInfo[5] = ray.arrival_azimuth
                             thisRayInfo[6] = ray.is_los
+                            thisRayInfo[7] = ray.phaseInDegrees
                             #allEpisodeData = np.zeros((numScenesPerEpisode, numTxRxPairsPerScene,
                             # numRaysPerTxRxPair, numVariablePerRay), np.float32)
                             allEpisodeData[sc_i][rec_array_idx][ray_i]=thisRayInfo
                             ray_i += 1
-                            #if ray.is_los:
-                            #    print(thisRayInfo)
-
-        # just for reporting spent time
+                            if ray.is_los == 1:
+                                isLOSChannel = True #if one ray is LOS, the channel is
+                        if isLOSChannel == True:
+                            numLOS += 1
+                        else:
+                            numNLOS += 1
+                        # just for reporting spent time
         perc_done = ((sc_i + 1) / ep.number_of_scenes) * 100
         elapsed_time = datetime.datetime.today() - start
         time_p_perc = elapsed_time / perc_done
@@ -131,3 +138,7 @@ for ep in session.query(fgdb.Episode): #go over all episodes
     f.close()
 
     numEpisode += 1 #increment episode counter
+
+print('numLOS = ', numLOS)
+print('numNLOS = ', numNLOS)
+print('Sum = ', numLOS + numNLOS)
