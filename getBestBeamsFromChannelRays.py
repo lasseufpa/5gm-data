@@ -17,14 +17,21 @@ def main():
             number_Rx_antennasY = 2
         else:
             #to get statistics:
-            #txCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/upa_codebook_12x12.mat'
-            #rxCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/upa_codebook_12x12.mat'
-            txCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/tx_upa_codebook_12x12_valid.mat'
-            rxCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/rx_upa_codebook_12x12_valid.mat'
+            txCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/upa_codebook_12x12.mat'
+            rxCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/upa_codebook_12x12.mat'
+            #txCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/tx_upa_codebook_12x12_valid.mat'
+            #rxCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/rx_upa_codebook_12x12_valid.mat'
             Wt, number_Tx_antennasX, number_Tx_antennasY = readUPASteeringCodebooks(txCodebookInputFileName)
             Wr, number_Rx_antennasX, number_Rx_antennasY = readUPASteeringCodebooks(rxCodebookInputFileName)
             number_Tx_vectors = Wt.shape[1]
             number_Rx_vectors = Wr.shape[1]
+
+            if False: #make one antenna at receiver
+                Wr = None
+                number_Rx_antennasX = 1
+                number_Rx_antennasY = 1
+                number_Rx_vectors = 1
+
             print(number_Tx_antennasX, number_Tx_antennasY, number_Rx_antennasX, number_Rx_antennasY, number_Tx_vectors, number_Rx_vectors)
         number_Tx_antennas = number_Tx_antennasX * number_Tx_antennasY
         number_Rx_antennas = number_Rx_antennasX * number_Rx_antennasY
@@ -147,8 +154,9 @@ def main():
                 numOccurrencesBeamPairIndices[bestBeamPairIndex] += 1
                 (bestRxIndex, bestTxIndex) = np.unravel_index(bestBeamPairIndex,
                                                               equivalentChannelMagnitude.shape)
-                numOccurrencesTxIndices[bestTxIndex] += 1  # increment counters
-                numOccurrencesRxIndices[bestRxIndex] += 1
+                if isLOS == 0:
+                    numOccurrencesTxIndices[bestTxIndex] += 1  # increment counters
+                    numOccurrencesRxIndices[bestRxIndex] += 1
                 # if bestRxIndex + bestTxIndex != 0:
                 # print('bestRxIndex: ', bestRxIndex, ' and bestTxIndex: ', bestTxIndex)
                 #    exit(1)
@@ -172,6 +180,7 @@ def main():
     print('total numLOS = ', numLOS)
     print('Sum = ', numLOS + numNLOS)
 
+    print('Statistics for NLOS only:')
     print('tx_indices_histogram = [', end=" ")
     for i in range(len(numOccurrencesTxIndices)):
         print(numOccurrencesTxIndices[i], end=" ")

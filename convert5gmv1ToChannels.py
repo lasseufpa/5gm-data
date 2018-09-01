@@ -51,7 +51,7 @@ pythonExtension = '.npz'
 matlabExtension = '.hdf5'
 
 # assume 50 scenes per episode, 10 receivers per scene
-numScenesPerEpisode = 1 #50
+numScenesPerEpisode = 100 #50
 numTxRxPairsPerScene = 10
 numRaysPerTxRxPair = 25
 numVariablePerRay = 7+1 #has the ray angle now
@@ -97,7 +97,7 @@ for ep in session.query(fgdb.Episode): #go over all episodes
                         isLOSChannel = 0
                         for ray in rec.rays: #for all rays
                             #gather all info
-                            thisRayInfo = np.zeros(8)
+                            thisRayInfo = np.zeros(numVariablePerRay)
                             thisRayInfo[0] = ray.path_gain
                             thisRayInfo[1] = ray.time_of_arrival
                             thisRayInfo[2] = ray.departure_elevation

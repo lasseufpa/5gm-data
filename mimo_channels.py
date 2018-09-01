@@ -224,8 +224,11 @@ def getDFTOperatedChannel(H, number_Tx_antennas, number_Rx_antennas):
     return dictionaryOperatedChannel  # return equivalent channel after precoding and combining
 
 def getCodebookOperatedChannel(H, Wt, Wr):
-    dictionaryOperatedChannel = Wr.conj().T * H * Wt
-    return dictionaryOperatedChannel  # return equivalent channel after precoding and combining
+    if Wr is None: #only 1 antenna at Rx, and Wr was passed as None
+        return H * Wt
+    if Wt is None: #only 1 antenna at Tx
+        return Wr.conj().T * H
+    return Wr.conj().T * H * Wt # return equivalent channel after precoding and combining
 
 def readUPASteeringCodebooks(inputFileName):
     '''Read data created by
