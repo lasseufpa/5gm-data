@@ -1,5 +1,10 @@
 '''
-Generate a CSV with useful information.
+Generate a CSV with information from position and also LOS. The basic information
+about position is obtained with
+python ak_generateInfoList.py > new_simuls_los.csv
+which is later complemented wit LOS infomartion with this script.
+Important: edit the file new_simuls_los.csv to delete first and last rows
+before running this script with
 '''
 import csv
 import os
@@ -14,11 +19,17 @@ basePath = 'D:/insitedata/noOverlappingTx5m'
 #file generated with ak_generateInfoList.py:
 insiteCSVFile = 'D:/github/5gm-data/new_simuls_los.csv'
 
-#create dictionary
+'''
+create dictionary taking the episode, scene and Rx number of file with rows e.g.:
+V,0,0,2,flow2.0,753.8198286576,507.38595866735,LOS=1
+V,0,0,3,flow2.1,749.7071175056,566.1905128583,LOS=1
+I,0,0,4,flow2.2,729.85254058595,670.38607208065,none
+'''
 with open(insiteCSVFile, 'r') as f:
     insiteReader = csv.reader(f)
     insiteDictionary = {}
     for row in insiteReader:
+        #print(row)
         thisKey = str(row[1])+','+str(row[2])+','+str(row[3])
         insiteDictionary[thisKey]=row
 #print(insiteDictionary['0,0,0'][4])

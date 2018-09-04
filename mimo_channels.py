@@ -247,7 +247,9 @@ def readUPASteeringCodebooks(inputFileName):
     Nx = read_matlab_array_from_mat(inputFileName, arrayName)
     arrayName = 'Nay'
     Ny = read_matlab_array_from_mat(inputFileName, arrayName)
-    return codevectors, int(Nx), int(Ny)
+    arrayName = 'codebook'
+    codevectorsIndices = read_matlab_array_from_mat(inputFileName, arrayName)
+    return codevectors, int(Nx), int(Ny), codevectorsIndices
 
 def test_channel():
     # RESULTS_DIR='/Users/psb/ownCloud/Projects/DNN Wireless/rwi-3d-modeling/restuls/run00000'

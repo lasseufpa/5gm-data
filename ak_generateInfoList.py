@@ -1,5 +1,8 @@
-# Generate a CSV
-# Look at save5gmdata.py to understand the information stored in the database.
+'''
+Generate a CSV with some basic information, which is later complemented
+with ak_generateInSitePlusSumoList.py
+Look at save5gmdata.py to understand the information stored in the database.
+'''
 
 import numpy as np
 from shapely import geometry

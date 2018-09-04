@@ -51,7 +51,7 @@ pythonExtension = '.npz'
 matlabExtension = '.hdf5'
 
 # assume 50 scenes per episode, 10 receivers per scene
-numScenesPerEpisode = 100 #50
+numScenesPerEpisode = 1 #50
 numTxRxPairsPerScene = 10
 numRaysPerTxRxPair = 25
 numVariablePerRay = 7+1 #has the ray angle now
