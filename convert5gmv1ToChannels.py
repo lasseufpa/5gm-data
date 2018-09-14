@@ -112,6 +112,7 @@ for ep in session.query(fgdb.Episode): #go over all episodes
                             ray_i += 1
                             if ray.is_los == 1:
                                 isLOSChannel = True #if one ray is LOS, the channel is
+                        #print('AK:',sc_i, rec_array_idx)
                         if isLOSChannel == True:
                             numLOS += 1
                         else:

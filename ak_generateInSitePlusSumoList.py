@@ -1,10 +1,11 @@
 '''
 Generate a CSV with information from position and also LOS. The basic information
-about position is obtained with
+about position is obtained previously running
 python ak_generateInfoList.py > new_simuls_los.csv
-which is later complemented wit LOS infomartion with this script.
+and this information now complemented with information obtained, within each
+folder, from files sumoOutputInfoFileName.txt.
 Important: edit the file new_simuls_los.csv to delete first and last rows
-before running this script with
+before running this script.
 '''
 import csv
 import os
@@ -15,9 +16,9 @@ def base_run_dir_fn(i): #the folders will be run00001, run00002, etc.
     return "run{:05d}".format(i)
 
 #folder with runs
-basePath = 'D:/insitedata/noOverlappingTx5m'
-#file generated with ak_generateInfoList.py:
-insiteCSVFile = 'D:/github/5gm-data/new_simuls_los.csv'
+basePath = 'D:/insitedata/results_new_lidar'
+#file previously generated with script ak_generateInfoList.py:
+insiteCSVFile = 'D:/github/5gm-data/new_simuls_all.txt'
 
 '''
 create dictionary taking the episode, scene and Rx number of file with rows e.g.:
@@ -34,15 +35,20 @@ with open(insiteCSVFile, 'r') as f:
         insiteDictionary[thisKey]=row
 #print(insiteDictionary['0,0,0'][4])
 
-for numRun in range(1372):
+numRun = 0 #counter
+while True:
     thisRunFolder = os.path.join(basePath, base_run_dir_fn(numRun))
     sumoInfoTxtFileName = os.path.join(thisRunFolder, 'sumoOutputInfoFileName.txt')
     #print('Opening', sumoInfoTxtFileName)
-    with open(sumoInfoTxtFileName, 'r') as f:
-        reader = csv.reader(f)
-        allLines = list(reader)
+    try:
+        with open(sumoInfoTxtFileName, 'r') as f:
+            reader = csv.reader(f)
+            allLines = list(reader)
+    except FileNotFoundError:
+        break
     numLines = len(allLines)
     #print('numLines ', numLines)
+
     #print(allLines)
     for lineNum in range(1, numLines): #recall that we have a header, so start in 1 instead of 0
         #"episode_i,scene_i,receiverIndex,veh,veh_i,typeID,xinsite,yinsite,x3,y3,z3,lane_id,angle,speed,length, width, height,distance,waitTime"
@@ -71,3 +77,5 @@ for numRun in range(1372):
                      + thisInSiteLine[5] + ',' + thisInSiteLine[6] + \
                      ',' + thisLine[16] + ',' + thisRunFolder.replace('\\','/') + ','+ thisInSiteLine[-1]
         print(thisString)
+
+    numRun += 1

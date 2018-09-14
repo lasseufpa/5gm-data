@@ -5,12 +5,16 @@ be calculated with the generated data).
 '''
 import numpy as np
 import os
+
+from builtins import print
+
 from mimo_channels import getCodebookOperatedChannel, readUPASteeringCodebooks, getNarrowBandULAMIMOChannel, getNarrowBandUPAMIMOChannel, getDFTOperatedChannel
 import csv
 import h5py
 
 def main():
-    #file generated with ak_generateInfoList.py:
+    #file generated with ak_generateInSitePlusSumoList.py:
+    #need to use both LOS and NLOS here, cannot use restricted list because script does a loop over all scenes
     insiteCSVFile = 'D:/github/5gm-data/sumoAndInsiteInfoValids.csv'
 
     useUPA = True
@@ -22,8 +26,8 @@ def main():
             number_Rx_antennasY = 2
         else:
             #to get statistics:
-            txCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/upa_codebook_2x2.mat'
-            rxCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/upa_codebook_2x2.mat'
+            txCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/tx_upa_codebook_16x16_N832_valid.mat'
+            rxCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/rx_upa_codebook_16x16_N832_valid.mat'
             #txCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/tx_upa_codebook_12x12_valid.mat'
             #rxCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/rx_upa_codebook_12x12_valid.mat'
             Wt, number_Tx_antennasX, number_Tx_antennasY, codevectorsIndicesTx = readUPASteeringCodebooks(txCodebookInputFileName)
@@ -31,7 +35,7 @@ def main():
             number_Tx_vectors = Wt.shape[1]
             number_Rx_vectors = Wr.shape[1]
 
-            if False: #make one antenna at receiver
+            if True: #make one antenna at receiver
                 Wr = None
                 number_Rx_antennasX = 1
                 number_Rx_antennasY = 1
@@ -45,7 +49,7 @@ def main():
         number_Rx_antennas = 8
     normalizedAntDistance = 0.5
     angleWithArrayNormal = 0  # use 0 when the angles are provided by InSite
-    numEpisodes = 1372 #119  # total number of episodes
+    numEpisodes = 2017  #119  # total number of episodes
     #outputFolder = './outputnn/'
     outputFolder = 'D:/github/5gm-data/outputnn/'
     if not os.path.exists(outputFolder):
@@ -106,7 +110,12 @@ def main():
                     continue  # next Tx / Rx pair
 
                 thisKey = str(e)+','+str(s)+','+str(r)
-                thisInSiteLine = insiteDictionary[thisKey] #recover from dic
+                try:
+                    thisInSiteLine = insiteDictionary[thisKey] #recover from dic
+                except KeyError:
+                    print('Could not find in dictionary the key: ', thisKey)
+                    print('Verify file',insiteCSVFile);
+                    exit(-1)
                 #5, 6, and 7
                 #tokens = thisInSiteLine.split(',')
                 receiverPositions[s,r,0:3] = np.array([thisInSiteLine[5],thisInSiteLine[6],thisInSiteLine[7]])
@@ -217,6 +226,11 @@ def main():
                 #recoverLabelTx = np.floor(outputLabel/number_Rx_antennas)
                 #recoverLabelRx = outputLabel - recoverLabelTx*number_Rx_antennas
                 episodeOutputs[s,r]=np.abs(equivalentChannel)
+
+                #check if there is NaN. This can be disabled for speed, it's just for debugging
+                if np.sum(np.isnan(episodeOutputs[s,r][:])) == 1:
+                    print('isNan = ')
+
 
             #finished processing this episode
         npz_name = outputFolder + 'output_e_' +str(e+1)+'.npz'
