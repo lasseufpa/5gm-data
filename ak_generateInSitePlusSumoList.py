@@ -9,6 +9,7 @@ before running this script.
 '''
 import csv
 import os
+from sys import argv
 
 #from config.py
 def base_run_dir_fn(i): #the folders will be run00001, run00002, etc.
@@ -16,22 +17,37 @@ def base_run_dir_fn(i): #the folders will be run00001, run00002, etc.
     return "run{:05d}".format(i)
 
 #folder with runs
-basePath = 'D:/insitedata/results_new_lidar'
+#basePath = 'D:/insitedata/results_new_lidar'
 #file previously generated with script ak_generateInfoList.py:
-insiteCSVFile = 'D:/github/5gm-data/new_simuls_all.txt'
+insiteCSVFile = 'D:/github/5gm-data/list1_valids_and_invalids.csv'
+'''
+the list above has information:
+V,0,0,2,flow2.0,753.8198286576,507.38595866735,25,LOS=1
+V,0,0,3,flow2.1,749.7071175056,566.1905128583,14,LOS=1
+I,0,0,4,flow2.2,729.85254058595,670.38607208065,0,none
+'''
 
-'''
-create dictionary taking the episode, scene and Rx number of file with rows e.g.:
-V,0,0,2,flow2.0,753.8198286576,507.38595866735,LOS=1
-V,0,0,3,flow2.1,749.7071175056,566.1905128583,LOS=1
-I,0,0,4,flow2.2,729.85254058595,670.38607208065,none
-'''
+if len(argv) != 2:
+    print('You need to specify the folder that has the output files written by the ray-tracing simulator!')
+    print('Usage: python', argv[0], 'input_folder')
+    print('PS: Recall that this script assumes you also use the file:',insiteCSVFile,'If this is not the correct one, please edit the script!')
+    exit(-1)
+# Object which will be modified in the RWI project
+#base_insite_project_path = 'D:/insitedata/insite_new_simuls/'
+#Folder to store each InSite project and its results (will create subfolders for each "run", run0000, run0001, etc.)
+basePath = argv[1] #'D:/owncloud-lasse/5GM_DATA/flat_simulation/results_new_lidar/'
+
+
 with open(insiteCSVFile, 'r') as f:
     insiteReader = csv.reader(f)
     insiteDictionary = {}
     for row in insiteReader:
         #print(row)
-        thisKey = str(row[1])+','+str(row[2])+','+str(row[3])
+        try:
+            thisKey = str(row[1])+','+str(row[2])+','+str(row[3])
+        except IndexError as exc:
+            print('WARNING:\nHave you deleted the first and last lines of file',insiteCSVFile,'?\n')
+            raise exc
         insiteDictionary[thisKey]=row
 #print(insiteDictionary['0,0,0'][4])
 
@@ -71,11 +87,11 @@ while True:
         #SUMO reports position of middle of front bumper. We repositioned to the middle of the vehicle
         #So, use coordinates from "InSite" file
         #pick what to include in new list:
-        #    0          1          2       3    4      5      6      7      8 9  10    11    12     13    14     15      16     17       18
-        #"episode_i,scene_i,receiverIndex,veh,veh_i,typeID,xinsite,yinsite,x3,y3,z3,lane_id,angle,speed,length, width, height,distance,waitTime"
+        #    0          1          2       3    4      5      6      7      8 9  10    11    12     13    14     15      16     17       18       19
+        #"episode_i,scene_i,receiverIndex,veh,veh_i,typeID,xinsite,yinsite,x3,y3,z3,lane_id,angle,speed,length, width, height,distance,waitTime" numRays
         thisString = thisLine[0] + ',' + thisLine[1] + ',' + thisLine[2] + ',' + thisLine[3] + ',' + thisLine[5] + ',' \
                      + thisInSiteLine[5] + ',' + thisInSiteLine[6] + \
-                     ',' + thisLine[16] + ',' + thisRunFolder.replace('\\','/') + ','+ thisInSiteLine[-1]
+                     ',' + thisLine[16] + ',' + thisInSiteLine[-2] + ',' + thisRunFolder.replace('\\','/') + ','+ thisInSiteLine[-1]
         print(thisString)
 
     numRun += 1

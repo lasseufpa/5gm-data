@@ -1,5 +1,6 @@
 '''
-Generate a CSV with some basic information, which is later complemented
+Reads the database (e.g. episode.db) and then
+generates a CSV with some basic information, which is later complemented
 with ak_generateInSitePlusSumoList.py
 Look at save5gmdata.py to understand the information stored in the database.
 '''
@@ -62,6 +63,7 @@ for ep in session.query(fgdb.Episode):  # go over all episodes
         losReceiversInThisScene = np.zeros(maxNumOfReceiversInThisEpisode, dtype=np.bool)
         validReceiversInThisScene = np.zeros(maxNumOfReceiversInThisEpisode, dtype=np.bool)
         approximateReceiverPositions = np.zeros((maxNumOfReceiversInThisEpisode, 3))
+        numOfRaysForThisReceiver = np.zeros(maxNumOfReceiversInThisEpisode, dtype=np.int)
         # sc.objects has sc.number_of_mobile_objects, which can be a large number (e.g. 53)
         for obj in sc.objects:  # get object in scene
             if len(obj.receivers) == 0:
@@ -89,6 +91,8 @@ for ep in session.query(fgdb.Episode):  # go over all episodes
                 print('Was expecting only 1 receiver per vehicle')
                 exit(-1)
             for rec in obj.receivers:  # for all potential receivers
+                numOfRaysForThisReceiver[rec_array_idx] = len(rec.rays)
+                #print('aaaa',numOfRaysForThisReceiver[rec_array_idx])
                 for ray in rec.rays:  # for all rays
                     if ray.is_los == 1:
                         losReceiversInThisScene[rec_array_idx] = 1
@@ -104,7 +108,7 @@ for ep in session.query(fgdb.Episode):  # go over all episodes
             #make indices start from 0
             thisString = str(numEpisode) + ',' + str(sc_i) + ',' + str(i) + ',' + rec_name_to_array_idx_map[
                 i] + ',' + str(approximateReceiverPositions[i, 0]) + ',' + str(
-                approximateReceiverPositions[i, 1])
+                approximateReceiverPositions[i, 1]) + ',' + str(numOfRaysForThisReceiver[i])
             if validReceiversInThisScene[i]:  # pre-append
                 thisString = 'V,' + thisString
                 if losReceiversInThisScene[i]:  # post-append

@@ -15,7 +15,23 @@ import h5py
 def main():
     #file generated with ak_generateInSitePlusSumoList.py:
     #need to use both LOS and NLOS here, cannot use restricted list because script does a loop over all scenes
-    insiteCSVFile = 'D:/github/5gm-data/sumoAndInsiteInfoValids.csv'
+    insiteCSVFile = 'D:/github/5gm-data/list2_only_valids.csv'
+    numEpisodes = 2086  #119  # total number of episodes
+    outputFolder = 'D:/github/5gm-data/outputnn/'
+
+    #parameters that are typically not changed
+    if os.name == 'nt':
+        #116 episodes
+        #inputPath = 'D:/github/5gm-data/insitedata/urban_canyon_v2i_5gmv1_rays_e'
+        #119 episodes
+        #inputPath = 'D:/ak/Works/2018-proj-beam-sense-ml-lidar/lidar_and_insite/e119/insitedata/urban_canyon_v2i_5gmv1_positionMatrix_e'
+        inputPath = 'D:/github/5gm-data/insitedata/urban_canyon_v2i_5gmv1_rays_e'
+    else:
+        #inputPath = '/mnt/d/github/5gm-data/insitedata/urban_canyon_v2i_5gmv1_rays_e'
+        #inputPath = '/mnt/d/ak/Works/2018-proj-beam-sense-ml-lidar/lidar_and_insite/e119/insitedata/urban_canyon_v2i_5gmv1_positionMatrix_e'
+        inputPath = '/mnt/d/github/5gm-data/insitedata/urban_canyon_v2i_5gmv1_rays_e'
+    normalizedAntDistance = 0.5
+    angleWithArrayNormal = 0  # use 0 when the angles are provided by InSite
 
     useUPA = True
     if useUPA == True:
@@ -27,7 +43,7 @@ def main():
         else:
             #to get statistics:
             txCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/tx_upa_codebook_16x16_N832_valid.mat'
-            rxCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/rx_upa_codebook_16x16_N832_valid.mat'
+            rxCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/rx_upa_codebook_4x4_N52_valid.mat'
             #txCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/tx_upa_codebook_12x12_valid.mat'
             #rxCodebookInputFileName = 'D:/gits/lasse/software/mimo-matlab/rx_upa_codebook_12x12_valid.mat'
             Wt, number_Tx_antennasX, number_Tx_antennasY, codevectorsIndicesTx = readUPASteeringCodebooks(txCodebookInputFileName)
@@ -35,7 +51,7 @@ def main():
             number_Tx_vectors = Wt.shape[1]
             number_Rx_vectors = Wr.shape[1]
 
-            if True: #make one antenna at receiver
+            if False: #make one antenna at receiver
                 Wr = None
                 number_Rx_antennasX = 1
                 number_Rx_antennasY = 1
@@ -47,23 +63,9 @@ def main():
     else:
         number_Tx_antennas = 32
         number_Rx_antennas = 8
-    normalizedAntDistance = 0.5
-    angleWithArrayNormal = 0  # use 0 when the angles are provided by InSite
-    numEpisodes = 2017  #119  # total number of episodes
-    #outputFolder = './outputnn/'
-    outputFolder = 'D:/github/5gm-data/outputnn/'
+
     if not os.path.exists(outputFolder):
         os.makedirs(outputFolder)
-    if os.name == 'nt':
-        #116 episodes
-        #inputPath = 'D:/github/5gm-data/insitedata/urban_canyon_v2i_5gmv1_rays_e'
-        #119 episodes
-        #inputPath = 'D:/ak/Works/2018-proj-beam-sense-ml-lidar/lidar_and_insite/e119/insitedata/urban_canyon_v2i_5gmv1_positionMatrix_e'
-        inputPath = 'D:/github/5gm-data/insitedata/urban_canyon_v2i_5gmv1_rays_e'
-    else:
-        #inputPath = '/mnt/d/github/5gm-data/insitedata/urban_canyon_v2i_5gmv1_rays_e'
-        #inputPath = '/mnt/d/ak/Works/2018-proj-beam-sense-ml-lidar/lidar_and_insite/e119/insitedata/urban_canyon_v2i_5gmv1_positionMatrix_e'
-        inputPath = '/mnt/d/github/5gm-data/insitedata/urban_canyon_v2i_5gmv1_rays_e'
 
     # initialize variables
     numOfValidChannels = 0
@@ -75,7 +77,7 @@ def main():
     numOccurrencesBeamPairIndices = np.zeros((np.maximum(number_Tx_vectors,number_Rx_vectors)**2,), dtype=np.int)
 
     '''
-    create dictionary taking the episode, scene and Rx number of file with rows e.g.:
+    use dictionary taking the episode, scene and Rx number of file with rows e.g.:
     0,0,0,flow11.0,Car,753.83094753535,649.05232524135,1.59,D:/insitedata/noOverlappingTx5m/run00000,LOS=0
     0,0,2,flow2.0,Car,753.8198286576,507.38595866735,1.59,D:/insitedata/noOverlappingTx5m/run00000,LOS=1
     0,0,3,flow2.1,Car,749.7071175056,566.1905128583,1.59,D:/insitedata/noOverlappingTx5m/run00000,LOS=1
@@ -89,10 +91,10 @@ def main():
             insiteDictionary[thisKey]=row
 
     for e in range(numEpisodes):
-        print("Episode # ", (e + 1))
+        print("Episode # ", e)
         # if using owncloud files
         # b = np.load('d:/github/5gm-data/insitedata/urban_canyon_v2i_5gmv1_rays_e'+str(e+1)+'.npz')
-        b = np.load(inputPath + str(e + 1) + '.npz')
+        b = np.load(inputPath + str(e) + '.npz')
         # b = np.load('./insitedata/urban_canyon_v2i_5gmv1_rays_e'+str(n+1)+'.npz')
         allEpisodeData = b['allEpisodeData']
         numScenes = allEpisodeData.shape[0]
@@ -105,7 +107,11 @@ def main():
         for s in range(numScenes):  # 50
             for r in range(numReceivers):  # 10
                 insiteData = allEpisodeData[s, r, :, :]
-                if sum(np.isnan(insiteData.flatten())) > 0:
+                #if insiteData corresponds to an invalid channel, all its values will be NaN.
+                #We check for that below
+                numNaNsInThisChannel = sum(np.isnan(insiteData.flatten()))
+                if  numNaNsInThisChannel == np.prod(insiteData.shape):
+                    #print('aaa', sum(np.isnan(insiteData.flatten())))
                     numOfInvalidChannels += 1
                     continue  # next Tx / Rx pair
 
@@ -114,10 +120,24 @@ def main():
                     thisInSiteLine = insiteDictionary[thisKey] #recover from dic
                 except KeyError:
                     print('Could not find in dictionary the key: ', thisKey)
-                    print('Verify file',insiteCSVFile);
+                    print('Verify file',insiteCSVFile)
                     exit(-1)
                 #5, 6, and 7
                 #tokens = thisInSiteLine.split(',')
+                if numNaNsInThisChannel > 0:
+                    numOfValidRays = int(thisInSiteLine[8]) #number of rays is in 9-th position in CSV list
+                    #I could simply use
+                    #insiteData = insiteData[0:numOfValidRays]
+                    #given the NaN are in the last rows, but to be safe given that did not check, I will go for a slower solution
+                    insiteDataTemp = np.zeros((numOfValidRays, insiteData.shape[1]))
+                    numMaxRays = insiteData.shape[0]
+                    validRayCounter = 0
+                    for itemp in range(numMaxRays):
+                        if sum(np.isnan(insiteData[itemp].flatten())) == 0:
+                            insiteDataTemp[validRayCounter] = insiteData[itemp]
+                            validRayCounter += 1
+                    insiteData = insiteDataTemp #replace by smaller array without NaN
+
                 receiverPositions[s,r,0:3] = np.array([thisInSiteLine[5],thisInSiteLine[6],thisInSiteLine[7]])
 
                 numOfValidChannels += 1
@@ -228,16 +248,17 @@ def main():
                 episodeOutputs[s,r]=np.abs(equivalentChannel)
 
                 #check if there is NaN. This can be disabled for speed, it's just for debugging
-                if np.sum(np.isnan(episodeOutputs[s,r][:])) == 1:
-                    print('isNan = ')
+                if np.sum(np.isnan(episodeOutputs[s,r][:])) > 0:
+                    print('Found Nan (e,s,r) = ',e,s,r)
+                    exit(-1)
 
 
             #finished processing this episode
-        npz_name = outputFolder + 'output_e_' +str(e+1)+'.npz'
+        npz_name = outputFolder + 'output_e_' +str(e)+'.npz'
         np.savez(npz_name, output=episodeOutputs)
         print('Saved file ', npz_name)
 
-        outputFileName = outputFolder + 'outputs_positions_e_' +str(e+1)+'.hdf5'
+        outputFileName = outputFolder + 'outputs_positions_e_' +str(e)+'.hdf5'
         f = h5py.File(outputFileName, 'w')
         f['episodeOutputs'] = episodeOutputs
         f['receiverPositions'] = receiverPositions

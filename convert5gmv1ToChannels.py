@@ -1,18 +1,21 @@
-#Will parse all database and create numpy arrays that represent all channels in the database.
-#Specificities: some episodes do not have all scenes. And some scenes do not have all receivers.
-#Assuming Ne episodes, with Ns scenes each, and Nr receivers (given there was only one transmitter),
-#there are Ne x Ns x Nr channel matrices and each must represent L=25 rays.
-#With Ne=119, Ns=50, Nr=10, we have 59500 matrices with 25 rays. It is better to save
-#each episode in one file, with the matrix given by
-#scene 1:Ns x Tx_index x Rx_index x numberRays and 7 numbers, the following for each ray
-        # path_gain
-        # timeOfArrival
-        # departure_elevation
-        # departure_azimuth
-        # arrival_elevation
-        # arrival_azimuth
-        # isLOS
-#to simplify I will assume that all episodes have 50 scenes and 10 receivers.
+'''
+Will parse all database and create numpy arrays that represent all channels in the database.
+Specificities: some episodes do not have all scenes. And some scenes do not have all receivers.
+Assuming Ne episodes, with Ns scenes each, and Nr receivers (given there was only one transmitter),
+there are Ne x Ns x Nr channel matrices and each must represent L=25 rays.
+With Ne=119, Ns=50, Nr=10, we have 59500 matrices with 25 rays. It is better to save
+each episode in one file, with the matrix given by
+scene 1:Ns x Tx_index x Rx_index x numberRays and 7 numbers, the following for each ray
+         path_gain
+         timeOfArrival
+         departure_elevation
+         departure_azimuth
+         arrival_elevation
+         arrival_azimuth
+         isLOS
+to simplify we assume that all episodes have the same number of scenes (e.g. 50) and receivers (e.g. 10).
+Episodes, scenes, etc, start counting from 0 (not 1).
+'''
 import datetime
 import numpy as np
 from shapely import geometry
@@ -29,8 +32,8 @@ class c:
     #analysis_area = (648, 348, 850, 685)
     analysis_area = (744, 429, 767, 679)
     analysis_area_resolution = 0.5
-    antenna_number = 4
-    frequency = 6e10
+    #antenna_number = 4 #not needed
+    #frequency = 6e10 #not needed
 analysis_polygon = geometry.Polygon([(c.analysis_area[0], c.analysis_area[1]),
                                      (c.analysis_area[2], c.analysis_area[1]),
                                      (c.analysis_area[2], c.analysis_area[3]),
@@ -62,7 +65,7 @@ numNLOS = 0
 for ep in session.query(fgdb.Episode): #go over all episodes
     print('Processing ', ep.number_of_scenes, ' scenes in episode ', ep.insite_pah,)
     print('Start time = ', ep.simulation_time_begin, ' and sampling period = ', ep.sampling_time, ' seconds')
-    print('Episode: ' + str(numEpisode+1) + ' out of ' + str(totalNumEpisodes))
+    print('Episode: ' + str(numEpisode) + ' out of ' + str(totalNumEpisodes))
 
     #initialization
     #Ns x [Tx_index x Rx_index x numberRays] and 7 numbers, the following for each ray
@@ -128,11 +131,11 @@ for ep in session.query(fgdb.Episode): #go over all episodes
             time_p_perc * (100 - perc_done)), end='')
 
     print()
-    outputFileName = fileNamePrefix + '_e' + str(numEpisode+1) + pythonExtension
+    outputFileName = fileNamePrefix + '_e' + str(numEpisode) + pythonExtension
     np.savez(outputFileName, allEpisodeData=allEpisodeData)
     print('==> Wrote file ' + outputFileName)
 
-    outputFileName = fileNamePrefix + '_e' + str(numEpisode+1) + matlabExtension
+    outputFileName = fileNamePrefix + '_e' + str(numEpisode) + matlabExtension
     print('==> Wrote file ' + outputFileName)
     f = h5py.File(outputFileName, 'w')
     f['allEpisodeData'] = allEpisodeData
