@@ -26,7 +26,14 @@ analysis_polygon = geometry.Polygon([(c.analysis_area[0], c.analysis_area[1]),
                                      (c.analysis_area[2], c.analysis_area[1]),
                                      (c.analysis_area[2], c.analysis_area[3]),
                                      (c.analysis_area[0], c.analysis_area[3])])
-only_los = True
+
+only_los = True #use or not only the Line of Sight (LOS) channels
+
+#use_geometricMIMOChannelModel determines what is written in the output array best_ray_array
+#For "classification", use True. For "regression", use False
+#If True, the output are 2 numbers: the best Tx and Rx codebook indices
+#If False, the output are 4 real numbers, representing the angles (azimuth and elevation) for Tx and Rx
+#The array best_ray_array is later used as the output of e.g. neural networks
 use_geometricMIMOChannelModel = False
 
 npz_name = 'episode.npz' #output file name
