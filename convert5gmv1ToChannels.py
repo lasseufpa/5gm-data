@@ -21,19 +21,19 @@ import numpy as np
 from shapely import geometry
 #from matplotlib import pyplot as plt
 import h5py
+import matplotlib.pyplot as plt
 
 from rwisimulation.positionmatrix import position_matrix_per_object_shape, calc_position_matrix
 #from rwisimulation.calcrxpower import calc_rx_power
 
 from rwisimulation.datamodel import save5gmdata as fgdb
 
-#import config as c
+
 class c:
     #analysis_area = (648, 348, 850, 685)
-    analysis_area = (744, 429, 767, 679)
+    #analysis_area = (744, 429, 767, 679) #rosslyn
+    analysis_area = (700, 600, 30, 18) #china
     analysis_area_resolution = 0.5
-    #antenna_number = 4 #not needed
-    #frequency = 6e10 #not needed
 analysis_polygon = geometry.Polygon([(c.analysis_area[0], c.analysis_area[1]),
                                      (c.analysis_area[2], c.analysis_area[1]),
                                      (c.analysis_area[2], c.analysis_area[3]),
@@ -49,12 +49,12 @@ start = datetime.datetime.today()
 perc_done = None
 
 #if needed, manually create the output folder
-fileNamePrefix = './insitedata/urban_canyon_v2i_5gmv1_rays' #prefix of output files
+fileNamePrefix = './insite_data_s007_carrie2.8GHz/beijing_mobile_2.8GHz_ts1s_VP' #prefix of output files
 pythonExtension = '.npz'
 matlabExtension = '.hdf5'
 
 # assume 50 scenes per episode, 10 receivers per scene
-numScenesPerEpisode = 1 #50
+numScenesPerEpisode = 40 #50
 numTxRxPairsPerScene = 10
 numRaysPerTxRxPair = 25
 numVariablePerRay = 7+1 #has the ray angle now
@@ -85,7 +85,7 @@ for ep in session.query(fgdb.Episode): #go over all episodes
         polygon_z = []
         polygons_of_interest_idx_list = []
         rec_present = []
-
+        
         for obj in sc.objects:
             if len(obj.receivers) == 0:
                 continue  #do not process objects that are not receivers
