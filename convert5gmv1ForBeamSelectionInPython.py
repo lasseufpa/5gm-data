@@ -14,12 +14,12 @@ from rwisimulation.calcrxpower import calc_rx_power
 
 from rwisimulation.datamodel import save5gmdata as fgdb
 
-#import config as c
+
 class c: #this information is obtained from the config.py file used to generate the data
-    #analysis_area = (648, 348, 850, 685)
-    analysis_area = (744, 429, 767, 679) #coordinates that define the areas the mobile objects should be
+    #analysis_area = (700, 600, 30, 18) #China
+    analysis_area = (744, 429, 767, 679) #Rosslyn coordinates that define the areas the mobile objects should be
     analysis_area_resolution = 0.5 #grid resolution in meters
-    antenna_number = 4 #number of antenna elements in Rx array
+    antenna_number = 10 #number of antenna elements in Rx array
     frequency = 6e10 #carrier frequency in Hz
 
 analysis_polygon = geometry.Polygon([(c.analysis_area[0], c.analysis_area[1]),
@@ -27,7 +27,7 @@ analysis_polygon = geometry.Polygon([(c.analysis_area[0], c.analysis_area[1]),
                                      (c.analysis_area[2], c.analysis_area[3]),
                                      (c.analysis_area[0], c.analysis_area[3])])
 
-only_los = True #use or not only the Line of Sight (LOS) channels
+only_los = False #use or not only the Line of Sight (LOS) channels
 
 #use_geometricMIMOChannelModel determines what is written in the output array best_ray_array
 #For "classification", use True. For "regression", use False
@@ -41,7 +41,6 @@ npz_name = 'episode.npz' #output file name
 session = fgdb.Session()
 
 pm_per_object_shape = position_matrix_per_object_shape(c.analysis_area, c.analysis_area_resolution)
-#print(pm_per_object_shape)
 
 # do not look, just to report
 start = datetime.datetime.today()
@@ -49,16 +48,20 @@ perc_done = None
 
 totalNumEpisodes = session.query(fgdb.Episode).count()
 print('Found ', totalNumEpisodes, ' episodes. Processing...')
+#Assumes 10 Tx/Rx pairs per scene
+number_of_TxRx = 10 
+
 for ep in session.query(fgdb.Episode):
-    # 50 scenes, 10 receivers per scene
+
+    # ITA paper: 50 scenes, 10 receivers per scene
     print('Processing ', ep.number_of_scenes, ' scenes in episode ', ep.insite_pah,)
     print('Start time = ', ep.simulation_time_begin, ' and sampling period = ', ep.sampling_time, ' seconds')
-    #Assumes 50 scenes per episode and 10 Tx/Rx pairs per scene
-    position_matrix_array = np.zeros((50, 10, *pm_per_object_shape), np.int8)
+    
+    position_matrix_array = np.zeros((ep.number_of_scenes,number_of_TxRx, *pm_per_object_shape), np.int8) #problem
     if use_geometricMIMOChannelModel:
-        best_ray_array = np.zeros((50, 10, 2), np.float32) #2 numbers are the best Tx and Rx codebook indices
+        best_ray_array = np.zeros((ep.number_of_scenes,number_of_TxRx, 2), np.float32) #2 numbers are the best Tx and Rx codebook indices
     else:
-        best_ray_array = np.zeros((50, 10, 4), np.float32) #4 angles (azimuth and elevation) for Tx and Rx
+        best_ray_array = np.zeros((ep.number_of_scenes,number_of_TxRx, 4), np.float32) #4 angles (azimuth and elevation) for Tx and Rx
     best_ray_array.fill(np.nan)
     rec_name_to_array_idx_map = [obj.name for obj in ep.scenes[0].objects if len(obj.receivers) > 0]
     print(rec_name_to_array_idx_map)
@@ -81,7 +84,7 @@ for ep in session.query(fgdb.Episode):
                             if ray.path_gain > best_path_gain:
                                 best_path_gain = ray.path_gain
                                 best_ray = ray
-                        if (best_ray is not None and not best_ray.is_los) or not only_los:
+                        if (best_ray is not None and not best_ray.is_los) or (best_ray is not None and not only_los):
                             if use_geometricMIMOChannelModel:
                                 departure_angle_array = np.empty((len(rec.rays), 2), np.float64)
                                 arrival_angle_array = np.empty((len(rec.rays), 2), np.float64)
@@ -109,7 +112,7 @@ for ep in session.query(fgdb.Episode):
                                     best_ray.departure_azimuth,
                                     best_ray.arrival_elevation,
                                     best_ray.arrival_azimuth))
-                    if (best_ray is not None and not best_ray.is_los) or not only_los:
+                    if (best_ray is not None and not best_ray.is_los) or (best_ray is not None and not only_los):
                         # the next polygon added will be the receiver
                         polygons_of_interest_idx_list.append(len(polygon_list))
                         rec_present.append(obj.name)
@@ -126,7 +129,6 @@ for ep in session.query(fgdb.Episode):
         for rec_i, rec_name in enumerate(rec_present):
             rec_array_idx = rec_name_to_array_idx_map.index(rec_name)
             position_matrix_array[sc_i, rec_array_idx, :] = scene_position_matrix[rec_i]
-
         # just reporting spent time
         perc_done = ((sc_i + 1) / ep.number_of_scenes) * 100
         elapsed_time = datetime.datetime.today() - start
@@ -136,9 +138,15 @@ for ep in session.query(fgdb.Episode):
             sc_i + 1,
             elapsed_time / (sc_i + 1),
             time_p_perc * (100 - perc_done)), end='')
+    if ep.id == 1:
+        best_ray_array_storage = best_ray_array
+        poisition_matrix_array_storage = position_matrix_array
+    else:
+        best_ray_array_storage = np.append(best_ray_array_storage, best_ray_array, axis = 0)
+        poisition_matrix_array_storage = np.append(poisition_matrix_array_storage, position_matrix_array, axis = 0)
     print()
 
 #save output file with two arrays
-np.savez(npz_name, position_matrix_array=position_matrix_array,
-             best_ray_array=best_ray_array)
+np.savez(npz_name, position_matrix_array_storage=position_matrix_array,
+             best_ray_array_storage=best_ray_array)
 print('Saved file ', npz_name)
