@@ -48,15 +48,20 @@ totalNumEpisodes = session.query(fgdb.Episode).count()
 start = datetime.datetime.today()
 perc_done = None
 
+#Active if will restrict the analysis area
+Use_analysis_polygon = False
+#Generate npz file
+use_npz = False
+
 #if needed, manually create the output folder
 fileNamePrefix = './insite_data_s007_carrie2.8GHz/beijing_mobile_2.8GHz_ts1s_VP' #prefix of output files
 pythonExtension = '.npz'
 matlabExtension = '.hdf5'
 
-# assume 50 scenes per episode, 10 receivers per scene
-numScenesPerEpisode = 40 #50
+# assume 40 scenes per episode, 10 receivers per scene
+numScenesPerEpisode = 40
 numTxRxPairsPerScene = 10
-numRaysPerTxRxPair = 25
+numRaysPerTxRxPair = 100
 numVariablePerRay = 7+1 #has the ray angle now
 #plt.ion()
 numEpisode = 0
@@ -91,8 +96,37 @@ for ep in session.query(fgdb.Episode): #go over all episodes
                 continue  #do not process objects that are not receivers
             obj_polygon = geometry.asMultiPoint(obj.vertice_array[:,(0,1)]).convex_hull
             # check if object is inside the analysis_area
-            if obj_polygon.within(analysis_polygon):
+            if not Use_analysis_polygon:
                 # if the object is a receiver and is within the analysis area
+                if len(obj.receivers) > 0:
+                    rec_array_idx = rec_name_to_array_idx_map.index(obj.name)
+                    for rec in obj.receivers: #for all receivers
+                        ray_i = 0
+                        isLOSChannel = 0
+                        for ray in rec.rays: #for all rays
+                            #gather all info
+                            thisRayInfo = np.zeros(numVariablePerRay)
+                            thisRayInfo[0] = ray.path_gain
+                            thisRayInfo[1] = ray.time_of_arrival
+                            thisRayInfo[2] = ray.departure_elevation
+                            thisRayInfo[3] = ray.departure_azimuth
+                            thisRayInfo[4] = ray.arrival_elevation
+                            thisRayInfo[5] = ray.arrival_azimuth
+                            thisRayInfo[6] = ray.is_los
+                            thisRayInfo[7] = ray.phaseInDegrees
+                            #allEpisodeData = np.zeros((numScenesPerEpisode, numTxRxPairsPerScene,
+                            # numRaysPerTxRxPair, numVariablePerRay), np.float32)
+                            allEpisodeData[sc_i][rec_array_idx][ray_i]=thisRayInfo
+                            ray_i += 1
+                            if ray.is_los == 1:
+                                isLOSChannel = True #if one ray is LOS, the channel is
+                        #print('AK:',sc_i, rec_array_idx)
+                        if isLOSChannel == True:
+                            numLOS += 1
+                        else:
+                            numNLOS += 1
+                        # just for reporting spent time
+            elif obj_polygon.within(analysis_polygon):
                 if len(obj.receivers) > 0:
                     rec_array_idx = rec_name_to_array_idx_map.index(obj.name)
                     for rec in obj.receivers: #for all receivers
@@ -130,10 +164,11 @@ for ep in session.query(fgdb.Episode): #go over all episodes
             elapsed_time / (sc_i + 1),
             time_p_perc * (100 - perc_done)), end='')
 
-    print()
-    outputFileName = fileNamePrefix + '_e' + str(numEpisode) + pythonExtension
-    np.savez(outputFileName, allEpisodeData=allEpisodeData)
-    print('==> Wrote file ' + outputFileName)
+    if use_npz:
+        print()
+        outputFileName = fileNamePrefix + '_e' + str(numEpisode) + pythonExtension
+        np.savez(outputFileName, allEpisodeData=allEpisodeData)
+        print('==> Wrote file ' + outputFileName)
 
     outputFileName = fileNamePrefix + '_e' + str(numEpisode) + matlabExtension
     print('==> Wrote file ' + outputFileName)
