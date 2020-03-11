@@ -147,6 +147,6 @@ for ep in session.query(fgdb.Episode):
     print()
 
 #save output file with two arrays
-np.savez(npz_name, position_matrix_array_storage=position_matrix_array,
-             best_ray_array_storage=best_ray_array)
+np.savez(npz_name, position_matrix_array=position_matrix_array_storage,
+             best_ray_array=best_ray_array_storage)
 print('Saved file ', npz_name)
