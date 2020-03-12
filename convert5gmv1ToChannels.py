@@ -31,8 +31,8 @@ from rwisimulation.datamodel import save5gmdata as fgdb
 
 class c:
     #analysis_area = (648, 348, 850, 685)
-    #analysis_area = (744, 429, 767, 679) #rosslyn
-    analysis_area = (700, 600, 30, 18) #china
+    analysis_area = (744, 429, 767, 679) #rosslyn
+    #analysis_area = (700, 600, 30, 18) #china
     analysis_area_resolution = 0.5
 analysis_polygon = geometry.Polygon([(c.analysis_area[0], c.analysis_area[1]),
                                      (c.analysis_area[2], c.analysis_area[1]),

@@ -7,7 +7,6 @@
 import datetime
 import numpy as np
 from shapely import geometry
-#from matplotlib import pyplot as plt
 
 from rwisimulation.positionmatrix import position_matrix_per_object_shape, calc_position_matrix
 from rwisimulation.calcrxpower import calc_rx_power
@@ -27,14 +26,14 @@ analysis_polygon = geometry.Polygon([(c.analysis_area[0], c.analysis_area[1]),
                                      (c.analysis_area[2], c.analysis_area[3]),
                                      (c.analysis_area[0], c.analysis_area[3])])
 
-only_los = False #use or not only the Line of Sight (LOS) channels
+only_los = True #use or not only the Line of Sight (LOS) channels
 
 #use_geometricMIMOChannelModel determines what is written in the output array best_ray_array
 #For "classification", use True. For "regression", use False
 #If True, the output are 2 numbers: the best Tx and Rx codebook indices
 #If False, the output are 4 real numbers, representing the angles (azimuth and elevation) for Tx and Rx
 #The array best_ray_array is later used as the output of e.g. neural networks
-use_geometricMIMOChannelModel = False
+use_geometricMIMOChannelModel = True
 
 npz_name = 'episode.npz' #output file name
 
@@ -144,9 +143,8 @@ for ep in session.query(fgdb.Episode):
     else:
         best_ray_array_storage = np.append(best_ray_array_storage, best_ray_array, axis = 0)
         poisition_matrix_array_storage = np.append(poisition_matrix_array_storage, position_matrix_array, axis = 0)
-    print()
 
 #save output file with two arrays
-np.savez(npz_name, position_matrix_array_storage=position_matrix_array,
-             best_ray_array_storage=best_ray_array)
+np.savez(npz_name, position_matrix_array=poisition_matrix_array_storage,
+             best_ray_array=best_ray_array_storage)
 print('Saved file ', npz_name)
