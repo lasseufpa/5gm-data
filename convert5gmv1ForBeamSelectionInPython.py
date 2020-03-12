@@ -139,16 +139,12 @@ for ep in session.query(fgdb.Episode):
             time_p_perc * (100 - perc_done)), end='')
     if ep.id == 1:
         best_ray_array_storage = best_ray_array
-        poisition_matrix_array_storage = position_matrix_array
+        position_matrix_array_storage = position_matrix_array
     else:
         best_ray_array_storage = np.append(best_ray_array_storage, best_ray_array, axis = 0)
-        poisition_matrix_array_storage = np.append(poisition_matrix_array_storage, position_matrix_array, axis = 0)
+        position_matrix_array_storage = np.append(position_matrix_array_storage, position_matrix_array, axis = 0)
 
 #save output file with two arrays
-<<<<<<< HEAD
-np.savez(npz_name, position_matrix_array=poisition_matrix_array_storage,
-=======
 np.savez(npz_name, position_matrix_array=position_matrix_array_storage,
->>>>>>> a8762e4dc40a68e15cd1575a3998cb657b266e75
              best_ray_array=best_ray_array_storage)
 print('Saved file ', npz_name)
