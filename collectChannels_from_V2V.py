@@ -54,12 +54,12 @@ if len(argv) != 3:
 numScenesPerEpisode = 50
 # if more than one Tx, should multiply the number of Tx and RX per numTx
 numRaysPerTxRxPair = 30
-numParametersPerRay = 7 + 1  # has the ray angle now
+numParametersPerRay = 10
 max_num_interactions = 30  # this will be checked in this script, so you can start by guessing and then re-run the script
 numTx = 2
 numRx = 5
 numTxRxPairsPerScene = numTx * numRx
-should_write_interactions = np.False_
+should_write_interactions = True
 should_write_npz_file = False
 
 # if needed, manually create the output folder
@@ -224,8 +224,22 @@ while not should_stop:
                     # go from 0:numRays to support a number of valid rays smaller than the maximum
                     allEpisodeData[this_scene_i, transmitter_number, receiver_number, 0:numRays, 0:6] = sixParameters
                     allEpisodeData[this_scene_i, transmitter_number, receiver_number, 0:numRays, 6] = areLOSChannels
-                    if numParametersPerRay == 8:
+                    if numParametersPerRay >= 8:
                         allEpisodeData[this_scene_i, transmitter_number, receiver_number, 0:numRays, 7] = phases
+                    
+                    #include Rx angle and Tx angle
+                    sumoOutputInfoFileName = os.path.join(run_dir, 'sumoOutputInfoFileName.txt')
+                    with open(sumoOutputInfoFileName, 'r') as f:
+                        reader = f.read().split('\n')
+                        for row in reader:
+                            if row == reader[0] or len(row)<1:
+                                continue #skip the header
+                            row_tmp = row.split(',')
+                            if int(row_tmp[2]) == receiver_number:
+                                allEpisodeData[this_scene_i, transmitter_number, receiver_number, 0:numRays, 9] = float(row_tmp[13])
+                            if int(row_tmp[3]) == transmitter_number:
+                                allEpisodeData[this_scene_i, transmitter_number, receiver_number, 0:numRays, 8] = float(row_tmp[13])
+
 
                     interactions_strings = paths.get_interactions_list(receiver_number + 1)
                     for ray_i in range(numRays):
